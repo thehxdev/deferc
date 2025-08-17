@@ -2,6 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef __linux__
+    #error "Unsupported platform. At this point only Linux is supported"
+#endif
+
 // How many functions a context should keep?
 #define FNS_LIMIT 16
 
