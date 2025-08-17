@@ -21,7 +21,7 @@ typedef struct defer_ctx {
 } defer_ctx_t;
 
 // This function is defined in defer.s
-extern void defer_call(void *fn, void *args[7], int args_count);
+extern void defer_call(void *fn, void *args[ARGS_LIMIT], int args_count);
 
 // add a function and it's arguments to defer context's stack
 void defer_add(defer_ctx_t *ctx, void *fn, void *args[ARGS_LIMIT], int args_count) {
@@ -50,6 +50,13 @@ void my_fclose(FILE *fp) {
 	fclose(fp);
 }
 
+void print_msgs_defer(const char *m1, const char *m2, const char *m3)
+{
+	puts(m1);
+	puts(m2);
+	puts(m3);
+}
+
 int main(void) {
 	defer_ctx_t ctx;
 	memset(&ctx, 0, sizeof(ctx));
@@ -69,6 +76,8 @@ int main(void) {
 
 	// add print_defer to defer context stack
 	defer_add(&ctx, print_defer, NULL, 0);
+
+	defer_add(&ctx, print_msgs_defer, (void*[ARGS_LIMIT]){"msg1", "msg2", "msg3"}, 3);
 
 	// do some work
 	puts("some random string to print!");
