@@ -21,6 +21,6 @@ defer_call:
 	movq	0x20(%r14), %r8
 	movq	0x28(%r14), %r9
 
-	call	%r12
+	call	*%r12
 	ret
 
