@@ -68,11 +68,11 @@ int main(void) {
 	}
 	// add `my_fclose` to defer context stack
 	defer_add(&ctx, my_fclose, (void*[ARGS_LIMIT]){ fp }, 1);
-	//              ^^^^^^^^^   ^^^^^^^^^^^^^^   ^
-	//                   |            |          |
-	// function to call -+            |          |
-	// function arguments ------------+          |
-	// arguments count --------------------------+
+	//              ^^^^^^^^^   ^^^^^^^^^^^^^^^^^^^^^^^   ^
+	//                   |                  |             |
+	// function to call -+                  |             |
+	// function arguments ------------------+             |
+	// arguments count -----------------------------------+
 
 	// add print_defer to defer context stack
 	defer_add(&ctx, print_defer, NULL, 0);
