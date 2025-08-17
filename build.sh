@@ -1,3 +1,10 @@
 #!/usr/bin/env sh
 
-cc -std=c99 -Og -g3 main.c x86_64_defer.s 
+CPU_ARCH="$(uname -m)"
+
+log_run() {
+	echo "[I] $@"
+	$@
+}
+
+log_run cc -std=c99 -Og -g3 main.c "${CPU_ARCH}_defer.s"
