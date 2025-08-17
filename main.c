@@ -37,8 +37,11 @@ void defer_add(defer_ctx_t *ctx, void *fn, void *args[ARGS_LIMIT], int args_coun
 // call all registered functions
 void defer_do(defer_ctx_t *ctx) {
 	int i;
-	for (i = 0; i < ctx->fns_count; ++i)
-		defer_call(ctx->fns[i].fn, ctx->fns[i].args, ctx->fns[i].args_count);
+	defer_fn_t cur;
+	for (i = ctx->fns_count - 1; i >= 0; --i) {
+		cur = ctx->fns[i];
+		defer_call(cur.fn, cur.args, cur.args_count);
+	}
 }
 
 void print_defer(void) {
@@ -50,8 +53,7 @@ void my_fclose(FILE *fp) {
 	fclose(fp);
 }
 
-void print_msgs_defer(const char *m1, const char *m2, const char *m3)
-{
+void print_msgs_defer(const char *m1, const char *m2, const char *m3) {
 	puts(m1);
 	puts(m2);
 	puts(m3);
@@ -66,18 +68,17 @@ int main(void) {
 		perror("fopen");
 		return 1;
 	}
+
 	// add `my_fclose` to defer context stack
-	defer_add(&ctx, my_fclose, (void*[ARGS_LIMIT]){ fp }, 1);
-	//              ^^^^^^^^^   ^^^^^^^^^^^^^^^^^^^^^^^   ^
-	//                   |                  |             |
-	// function to call -+                  |             |
-	// function arguments ------------------+             |
-	// arguments count -----------------------------------+
+	defer_add(&ctx,
+			  my_fclose,                 // function to call on defer
+			  (void*[ARGS_LIMIT]){ fp }, // function's arguments
+			  1);                        // number of arguments
 
-	// add print_defer to defer context stack
+	// add more functions...
 	defer_add(&ctx, print_defer, NULL, 0);
-
-	defer_add(&ctx, print_msgs_defer, (void*[ARGS_LIMIT]){"msg1", "msg2", "msg3"}, 3);
+	defer_add(&ctx, print_msgs_defer,
+			  (void*[ARGS_LIMIT]){"msg1", "msg2", "msg3"}, 3);
 
 	// do some work
 	puts("some random string to print!");
