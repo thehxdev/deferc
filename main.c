@@ -25,26 +25,26 @@ typedef struct defer_ctx {
 } defer_ctx_t;
 
 // This function is defined in defer.s
-extern void defer_call(void *fn, void *args[ARGS_LIMIT], int args_count);
+extern void defer_call(void *fn, void *args[ARGS_LIMIT]);
 
 // add a function and it's arguments to defer context's stack
-void defer_add(defer_ctx_t *ctx, void *fn, void *args[ARGS_LIMIT], int args_count) {
+void defer_add(defer_ctx_t *ctx, void *fn, void *args[ARGS_LIMIT]) {
 	if (ctx->fns_count == FNS_LIMIT)
 		return;
-	defer_fn_t *current_fn = &ctx->fns[ctx->fns_count++];
-	current_fn->args_count = args_count;
-	if (args_count > 0)
-		memcpy(current_fn->args, args, sizeof(void*) * ARGS_LIMIT);
-	current_fn->fn = fn;
+	defer_fn_t *curr = &ctx->fns[ctx->fns_count++];
+	memset(curr, 0, sizeof(*curr));
+	if (args)
+		memcpy(curr->args, args, sizeof(void*) * ARGS_LIMIT);
+	curr->fn = fn;
 }
 
 // call all registered functions
 void defer_do(defer_ctx_t *ctx) {
 	int i;
-	defer_fn_t cur;
+	defer_fn_t curr;
 	for (i = ctx->fns_count - 1; i >= 0; --i) {
-		cur = ctx->fns[i];
-		defer_call(cur.fn, cur.args, cur.args_count);
+		curr = ctx->fns[i];
+		defer_call(curr.fn, curr.args);
 	}
 }
 
@@ -79,20 +79,19 @@ int main(void) {
 
 	// add `my_fclose` to defer context stack
 	defer_add(&ctx,
-			  my_fclose,                 // function to call on defer
-			  (void*[ARGS_LIMIT]){ fp }, // function's arguments
-			  1);                        // number of arguments
+			  my_fclose,                  // function to call on defer
+			  (void*[ARGS_LIMIT]){ fp }); // function's arguments
 
 	// add more functions...
-	defer_add(&ctx, print_defer, NULL, 0);
+	defer_add(&ctx, print_defer, NULL);
 	defer_add(&ctx, print_msgs_defer,
-			  (void*[ARGS_LIMIT]){"msg1", "msg2", "msg3"}, 3);
+			  (void*[ARGS_LIMIT]){"msg1", "msg2", "msg3"});
 
 	// casting every thing to a pointer kinka sucks
 	// but for now, it's the only way to pass non-pointer
 	// values (size of all values MUST be less than sizeof(void*))
 	defer_add(&ctx, print_nums,
-			  (void*[ARGS_LIMIT]){(int*)1, (int*)2, (int*)3, (int*)4}, 4);
+			  (void*[ARGS_LIMIT]){(int*)1, (int*)2, (int*)3, (int*)4});
 
 	// do some work
 	puts("some random string to print!");
