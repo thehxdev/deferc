@@ -59,6 +59,10 @@ void print_msgs_defer(const char *m1, const char *m2, const char *m3) {
 	puts(m3);
 }
 
+void print_nums(int n1, int n2, int n3, int n4) {
+	printf("nums: %d %d %d %d\n", n1, n2, n3, n4);
+}
+
 int main(void) {
 	defer_ctx_t ctx;
 	memset(&ctx, 0, sizeof(ctx));
@@ -79,6 +83,12 @@ int main(void) {
 	defer_add(&ctx, print_defer, NULL, 0);
 	defer_add(&ctx, print_msgs_defer,
 			  (void*[ARGS_LIMIT]){"msg1", "msg2", "msg3"}, 3);
+
+	// casting every thing to a pointer kinka sucks
+	// but for now, it's the only way to pass non-pointer
+	// values (size of all values MUST be less than sizeof(void*))
+	defer_add(&ctx, print_nums,
+			  (void*[ARGS_LIMIT]){(int*)1, (int*)2, (int*)3, (int*)4}, 4);
 
 	// do some work
 	puts("some random string to print!");
