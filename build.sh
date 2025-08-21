@@ -7,4 +7,4 @@ log_run() {
 	$@
 }
 
-log_run cc -std=c99 -Og -g3 main.c "${CPU_ARCH}_defer.s"
+log_run cc -std=c99 -Og -g3 main.c "defer_${CPU_ARCH}.s"
