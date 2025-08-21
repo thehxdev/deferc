@@ -1,4 +1,4 @@
-	.file "defer.s"
+	.file "defer_x86_64.s"
 	.section .text
 
 	.global defer_call
@@ -8,7 +8,7 @@ defer_call:
 	test	%rsi, %rsi
 	je		.do_call
 
-    # save the function to call and args in temporary registers
+    # save the function pointer and args in temporary registers
 	movq	%rdi, %r10
 	movq	%rsi, %r11
 
@@ -23,4 +23,3 @@ defer_call:
 .do_call:
 	call	*%r10
 	ret
-

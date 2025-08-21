@@ -3,7 +3,7 @@
 #include <string.h>
 
 #ifndef __linux__
-    #error "Unsupported platform. At this point only Linux is supported"
+    #error "Unsupported platform. Only Linux is supported"
 #endif
 
 // How many functions a context should keep?
@@ -14,14 +14,14 @@
 #define ARGS_LIMIT 6
 
 typedef struct defer_fn {
-	void *fn;
-	void *args[ARGS_LIMIT];
-	int  args_count;
+    void *fn;
+    void *args[ARGS_LIMIT];
+    int  args_count;
 } defer_fn_t;
 
 typedef struct defer_ctx {
-	defer_fn_t fns[FNS_LIMIT];
-	int fns_count;
+    defer_fn_t fns[FNS_LIMIT];
+    int fns_count;
 } defer_ctx_t;
 
 // This function is defined in defer.s
@@ -29,74 +29,78 @@ extern void defer_call(void *fn, void *args[ARGS_LIMIT]);
 
 // add a function and it's arguments to defer context's stack
 void defer_add(defer_ctx_t *ctx, void *fn, void *args[ARGS_LIMIT]) {
-	if (ctx->fns_count == FNS_LIMIT)
-		return;
-	defer_fn_t *curr = &ctx->fns[ctx->fns_count++];
-	memset(curr, 0, sizeof(*curr));
-	if (args)
-		memcpy(curr->args, args, sizeof(void*) * ARGS_LIMIT);
-	curr->fn = fn;
+    if (ctx->fns_count == FNS_LIMIT)
+        return;
+    defer_fn_t *curr = &ctx->fns[ctx->fns_count++];
+    memset(curr, 0, sizeof(*curr));
+    if (args)
+        memcpy(curr->args, args, sizeof(void*) * ARGS_LIMIT);
+    curr->fn = fn;
 }
 
 // call all registered functions
 void defer_do(defer_ctx_t *ctx) {
-	int i;
-	defer_fn_t curr;
-	for (i = ctx->fns_count - 1; i >= 0; --i) {
-		curr = ctx->fns[i];
-		defer_call(curr.fn, curr.args);
-	}
+    int i;
+    defer_fn_t curr;
+    for (i = ctx->fns_count - 1; i >= 0; --i) {
+        curr = ctx->fns[i];
+        defer_call(curr.fn, curr.args);
+    }
 }
 
 void print_defer(void) {
-	puts("printing a string with defer!");
+    puts("printing a string with defer!");
 }
 
 void my_fclose(FILE *fp) {
-	puts("fclose in defer!");
-	fclose(fp);
+    puts("fclose in defer!");
+    fclose(fp);
 }
 
 void print_msgs_defer(const char *m1, const char *m2, const char *m3) {
-	puts(m1);
-	puts(m2);
-	puts(m3);
+    printf("%s %s %s\n", m1, m2, m3);
 }
 
 void print_nums(int n1, int n2, int n3, int n4) {
-	printf("nums: %d %d %d %d\n", n1, n2, n3, n4);
+    printf("nums: %d %d %d %d\n", n1, n2, n3, n4);
 }
 
 int main(void) {
-	defer_ctx_t ctx;
-	memset(&ctx, 0, sizeof(ctx));
+    defer_ctx_t ctx;
+    memset(&ctx, 0, sizeof(ctx));
 
-	FILE *fp = fopen("main.c", "rb");
-	if (!fp) {
-		perror("fopen");
-		return 1;
-	}
+    FILE *fp = fopen("main.c", "rb");
+    if (!fp) {
+        perror("fopen");
+        return 1;
+    }
 
-	// add `my_fclose` to defer context stack
-	defer_add(&ctx,
-			  my_fclose,                  // function to call on defer
-			  (void*[ARGS_LIMIT]){ fp }); // function's arguments
+    // add `my_fclose` to defer context stack
+    defer_add(&ctx,
+              my_fclose,                  // function to call on defer
+              (void*[ARGS_LIMIT]){ fp }); // function's arguments
 
-	// add more functions...
-	defer_add(&ctx, print_defer, NULL);
-	defer_add(&ctx, print_msgs_defer,
-			  (void*[ARGS_LIMIT]){"msg1", "msg2", "msg3"});
+    int *ptr = malloc(sizeof(int));
+    if (!ptr)
+        goto ret_defer;
+    defer_add(&ctx, free, (void*[ARGS_LIMIT]){ ptr });
 
-	// casting every thing to a pointer kinka sucks
-	// but for now, it's the only way to pass non-pointer
-	// values (size of all values MUST be less than sizeof(void*))
-	defer_add(&ctx, print_nums,
-			  (void*[ARGS_LIMIT]){(int*)1, (int*)2, (int*)3, (int*)4});
+    // add more functions...
+    defer_add(&ctx, print_defer, NULL);
+    defer_add(&ctx, print_msgs_defer,
+              (void*[ARGS_LIMIT]){"msg1", "msg2", "msg3"});
 
-	// do some work
-	puts("some random string to print!");
+    // casting every thing to a pointer kinka sucks
+    // but for now, it's the only way to pass non-pointer
+    // values (size of all values MUST be less than sizeof(void*))
+    defer_add(&ctx, print_nums,
+              (void*[ARGS_LIMIT]){(int*)1, (int*)2, (int*)3, (int*)4});
 
-	// call all registered defers
-	defer_do(&ctx);
-	return 0;
+    // do some work
+    puts("some random string to print!");
+
+ret_defer:
+    // call all registered defers
+    defer_do(&ctx);
+    return 0;
 }
